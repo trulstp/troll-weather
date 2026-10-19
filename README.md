@@ -3,7 +3,7 @@
 Live weather dashboard for the Norwegian **Troll research station** in Dronning Maud Land,
 Antarctica, built with React and data from the Norwegian Polar Institute.
 
-**[Live demo →](https://trulstp.github.io/polar_oppgave/)**
+**[Live demo →](https://trulstp.github.io/troll-weather/)**
 
 ![Troll Weather Station dashboard in light mode](docs/light.png)
 
@@ -61,8 +61,8 @@ Total page weight is ~180 KB. Measured with Lighthouse 12 in headless Chrome aga
 Requires Node.js 20.19+ or 22.12+.
 
 ```bash
-git clone https://github.com/trulstp/polar_oppgave.git
-cd polar_oppgave
+git clone https://github.com/trulstp/troll-weather.git
+cd troll-weather
 npm install
 npm run dev
 ```

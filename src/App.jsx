@@ -28,7 +28,7 @@ function Shell({ children }) {
           Polarinstitutt). Troll research station · 72.0° S, 2.5° E · ~1,270 m above sea level.
         </p>
         <p>
-          <a href="https://github.com/trulstp/polar_oppgave">Source code on GitHub</a>
+          <a href="https://github.com/trulstp/troll-weather">Source code on GitHub</a>
         </p>
       </footer>
     </>
