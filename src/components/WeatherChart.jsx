@@ -28,7 +28,7 @@ function WeatherChart({ temps, latest }) {
                     />
                     <YAxis unit=" °C" width={64} />
                     <Tooltip labelFormatter={formatDateTime} formatter={(v) => [`${v} °C`, 'Temperature (hourly avg)']} />
-                    <Line type="monotone" name="Temperature (°C)" dataKey="temp" stroke="#5b57c9" dot={false} />
+                    <Line type="monotone" name="Temperature (°C)" dataKey="temp" stroke="#5b57c9" strokeWidth={2} dot={false} isAnimationActive={false} />
                 </LineChart>
             </ResponsiveContainer>
             </div>
