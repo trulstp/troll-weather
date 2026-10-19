@@ -1,0 +1,95 @@
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.25rem 0.75rem;
+}
+
+.chart-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.chart-header h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.chart-subtitle {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.segmented {
+  display: inline-flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px;
+}
+
+.segmented button {
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+}
+
+.segmented button:hover {
+  color: var(--text);
+}
+
+.segmented button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+}
+
+.chart {
+  width: 100%;
+  height: 300px;
+}
+
+/* Recharts draws SVG; theme it through CSS so it follows light/dark mode. */
+.chart .recharts-cartesian-grid line {
+  stroke: var(--border);
+}
+
+.chart .recharts-cartesian-axis-tick-value {
+  fill: var(--muted);
+  font-size: 12px;
+}
+
+.chart .chart-area .recharts-area-curve {
+  stroke: var(--accent);
+}
+
+.chart-fill-top {
+  stop-color: var(--accent);
+  stop-opacity: 0.28;
+}
+
+.chart-fill-bottom {
+  stop-color: var(--accent);
+  stop-opacity: 0;
+}
+
+@media (max-width: 480px) {
+  .segmented {
+    width: 100%;
+  }
+
+  .segmented button {
+    flex: 1;
+    padding-inline: 0.4rem;
+  }
+}
