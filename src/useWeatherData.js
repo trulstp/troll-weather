@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { fetchWeather } from './api'
 
-const CACHE_KEY = 'troll-weather:v1'
+const CACHE_KEY = 'troll-weather:v2'
 // The station reports every minute; refreshing every 5 minutes is plenty.
 const MAX_AGE = 5 * 60 * 1000
 
-function readCache() {
+export function readCache() {
   try {
     return JSON.parse(localStorage.getItem(CACHE_KEY))
   } catch {
@@ -13,7 +13,7 @@ function readCache() {
   }
 }
 
-function writeCache(data) {
+export function writeCache(data) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify({ savedAt: Date.now(), data }))
   } catch {
