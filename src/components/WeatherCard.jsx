@@ -1,26 +1,35 @@
 import './WeatherCard.css'
 
-function WeatherCard({ data }) {
-  const latest = data[0]._source
-
+function WeatherCard({ latest }) {
   const measurements = [
-    { label: 'Temperature', value: latest.TA1_0, unit: '°C', spoken: `${latest.TA1_0} degrees Celsius` },
-    { label: 'Wind speed', value: latest.FF0_0, unit: 'm/s', spoken: `${latest.FF0_0} metres per second` },
-    { label: 'Humidity', value: latest.UU0_0, unit: '%', spoken: `${latest.UU0_0} percent` },
-    { label: 'Air pressure', value: latest.PO0_0, unit: 'hPa', spoken: `${latest.PO0_0} hectopascal` },
+    { label: 'Temperature', value: latest.TA1_0, unit: '°C', spoken: 'degrees Celsius' },
+    { label: 'Wind speed', value: latest.FF0_0, unit: 'm/s', spoken: 'metres per second' },
+    { label: 'Humidity', value: latest.UU0_0, unit: '%', spoken: 'percent' },
+    { label: 'Air pressure', value: latest.PO0_0, unit: 'hPa', spoken: 'hectopascal' },
   ]
 
   return (
-    <ul className="cards" aria-label="Current weather measurements">
+    <dl className="cards" aria-label="Current weather measurements">
       {measurements.map((m) => (
-        <li key={m.label} className="card" tabIndex={0}>
-          <span className="card-label" aria-hidden="true">{m.label}</span>
-          <span className="card-value" aria-label={`${m.label}: ${m.spoken}`}>
-            {m.value} <span className="card-unit" aria-hidden="true">{m.unit}</span>
-          </span>
-        </li>
+        <div key={m.label} className="card">
+          <dt className="card-label">{m.label}</dt>
+          <dd className="card-value">
+            {m.value == null ? (
+              <>
+                <span aria-hidden="true">–</span>
+                <span className="visually-hidden">Not available</span>
+              </>
+            ) : (
+              <>
+                {m.value}{' '}
+                <span className="card-unit" aria-hidden="true">{m.unit}</span>
+                <span className="visually-hidden">{m.spoken}</span>
+              </>
+            )}
+          </dd>
+        </div>
       ))}
-    </ul>
+    </dl>
   )
 }
 

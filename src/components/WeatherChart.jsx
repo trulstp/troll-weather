@@ -1,32 +1,39 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { formatDay, formatDateTime } from '../format'
 
-function WeatherChart({data}) {
-    const chartData = [...data].reverse()
-        .filter((item, index) => index % 100 === 0)
-        .map(item => ({
-            time: item._source.measured,
-            temp: item._source.TA1_0
-        }))
+function WeatherChart({ temps, latest }) {
+    // One x-axis tick per day, placed at local midnight.
+    const midnights = temps
+        .filter(item => new Date(item.time).getHours() === 0)
+        .map(item => item.time)
+
+    const values = temps.map(item => item.temp).filter(t => t != null)
+    const summary = values.length
+        ? `Hourly averages ranged from ${Math.min(...values)} °C to ${Math.max(...values)} °C. Latest reading ${latest.TA1_0 ?? 'not available'} °C.`
+        : 'No temperature readings available.'
 
         return (
+            <>
             <div style={{ width: '100%', height: 300 }}
             role="img"
             aria-label="Line chart showing temperature at Troll Research Station over the last 4 days"
             >
             <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
+                <LineChart data={temps}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
+                    <XAxis
                     dataKey="time"
-                    interval={15}
-                    tickFormatter={(t) => new Date(t).toLocaleDateString('no', { month: 'short', day: 'numeric' })}
+                    ticks={midnights}
+                    tickFormatter={formatDay}
                     />
-                    <YAxis label={{ value: '°C', position: 'insideLeft' }}/>
-                    <Tooltip labelFormatter={(t) => new Date(t).toLocaleDateString('no', { month: 'short', day: 'numeric' })} />
-                    <Line type="monotone" name="Temperature (℃)" dataKey="temp" stroke="#8884d8"  />
+                    <YAxis unit=" °C" width={64} />
+                    <Tooltip labelFormatter={formatDateTime} formatter={(v) => [`${v} °C`, 'Temperature (hourly avg)']} />
+                    <Line type="monotone" name="Temperature (°C)" dataKey="temp" stroke="#5b57c9" dot={false} />
                 </LineChart>
             </ResponsiveContainer>
             </div>
+            <p className="visually-hidden">Temperature over the last 4 days: {summary}</p>
+            </>
         )
 }
 

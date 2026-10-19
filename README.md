@@ -4,10 +4,11 @@ Web application displaying weather data from Troll Research Station, Antarctica.
 
 ## Getting started
 
-Requires Node.js 20 or 22.
+Requires Node.js 20.19+ or 22.12+ (needed by Vite 8).
 
 ```bash
 git clone https://github.com/trulstp/polar_oppgave.git
+cd polar_oppgave
 npm install
 npm run dev
 ```
@@ -19,7 +20,19 @@ Open http://localhost:5173 in your browser.
 - Current temperature, wind speed, humidity and air pressure
 - Temperature trend chart over the last 4 days
 
-Data is fetched from the Norsk Polarinstitutt OpenSearch API on page load.
+Data is fetched from the Norsk Polarinstitutt OpenSearch API.
+
+## Data loading and caching
+
+- **Server-side aggregation** — instead of downloading every per-minute reading
+  (~7000 documents, ~4.7 MB), the app asks OpenSearch for the latest reading plus
+  hourly temperature averages (`date_histogram`), about 12 KB.
+- **Stale-while-revalidate cache** — the response is stored in `localStorage`.
+  On repeat visits the page renders instantly from the cache, and refreshes in
+  the background when the data is older than 5 minutes.
+- **Auto-refresh** — while the page is open, data is refreshed every 5 minutes.
+- If a refresh fails, the last saved readings stay visible with a notice.
+- `preconnect` to the API host so the connection is opened while JS loads.
 
 ## Libraries
 
@@ -28,25 +41,27 @@ natively for React, has a straightforward API and good documentation.
 
 ## Accessibility
 
-- Semantic HTML elements (main, section, ul/li)
-- aria-labels on all measurements with full readable text
+- Semantic HTML elements (main, section, dl/dt/dd for measurements)
+- Units are spelled out for screen readers (e.g. "degrees Celsius")
+- Missing readings are shown as "–" and announced as "Not available"
+- The chart has a text alternative (min/max/latest temperature)
 - Responsive layout using flexbox — works on mobile and desktop
-- Keyboard navigable
 
 ## Known limitations and notes
 
-- Data is sampled to reduce chart density — not every measurement is shown
-- No caching — data is refetched on every page load and does not auto update without a page load.
-- The chart is not fully accessible to screen readers
+- The chart shows hourly averages, not every individual measurement
+- The chart is a summary for screen readers — individual data points are not exposed
 
-  ## Lighthouse scores (development build)
+## Lighthouse scores (production build)
+
+Measured with `npm run build && npm run preview`, Lighthouse 12, headless Chrome:
 
 | Category | Score |
 |---|---|
-| Performance | 39 |
+| Performance | 95 |
 | Accessibility | 100 |
-| Best Practices | 81 |
+| Best Practices | 100 |
 | SEO | 100 |
 
-> Note: Performance is low due to unminified Vite dev build and active Chrome extensions.
-> A production build would score significantly higher.
+Total page weight is ~173 KiB. Before switching to aggregated queries the
+weather request alone was ~4.7 MB.
