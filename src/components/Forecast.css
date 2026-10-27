@@ -61,6 +61,12 @@
   color: var(--cold);
 }
 
+.forecast-temps,
+.precip,
+.forecast-table td {
+  white-space: nowrap;
+}
+
 .temp-high {
   font-weight: 600;
 }
@@ -90,8 +96,135 @@
     font-size: 0.875rem;
   }
 
-  .forecast-table td:last-child,
-  .forecast-table thead th:last-child {
+  .day-row .forecast-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .day-toggle {
+    gap: 0.25rem;
+  }
+
+  .forecast-table .period-table th,
+  .forecast-table .period-table td {
+    padding-inline: 0.5rem;
+  }
+
+  .forecast-table .day-row td:last-child,
+  .forecast-table > thead th:last-child,
+  .period-table td:last-child,
+  .period-table thead th:last-child {
     display: none;
+  }
+}
+
+/* Expandable days */
+.day-row {
+  cursor: pointer;
+}
+
+.day-row:hover {
+  background: var(--bg);
+}
+
+.day-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font: inherit;
+  font-weight: 500;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.chevron {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.day-open .chevron {
+  transform: rotate(90deg);
+}
+
+.day-open .day-row th,
+.day-open .day-row td {
+  border-bottom-color: transparent;
+}
+
+.forecast-table .day-details > td {
+  padding: 0 0 0.75rem;
+}
+
+.period-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg);
+  border-radius: 10px;
+  font-size: 0.875rem;
+}
+
+.forecast-table .period-table th,
+.forecast-table .period-table td {
+  padding: 0.3rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.forecast-table .period-table tbody tr:last-child th,
+.forecast-table .period-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.forecast-table .period-table thead th {
+  font-size: 0.6875rem;
+  padding-top: 0.5rem;
+}
+
+.forecast-table .period-table tbody th {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: none;
+  }
+}
+
+/* Smallest phones (320–360px): tighten further so all columns still fit. */
+@media (max-width: 360px) {
+  .forecast-card {
+    padding-inline: 0.75rem;
+  }
+
+  .forecast-table th,
+  .forecast-table td {
+    padding-inline: 0.15rem;
+    font-size: 0.8125rem;
+  }
+
+  .day-row .forecast-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .chevron {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* Let long day labels ("Rest of today") wrap instead of widening the column. */
+  .forecast-table .day-row th {
+    white-space: normal;
   }
 }

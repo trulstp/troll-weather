@@ -4,7 +4,7 @@ import { stationTime } from './format'
 // Terms: https://api.met.no/doc/TermsOfService – identify yourself and respect the
 // Expires header. Browsers identify the app by its Origin, and a plain GET lets the
 // browser's HTTP cache honour Expires, so repeated calls never hit MET early.
-const FORECAST_URL = 'https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=-72.01&lon=2.53&altitude=1270'
+export const FORECAST_URL = 'https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=-72.01&lon=2.53&altitude=1270'
 
 const HOUR = 60 * 60 * 1000
 const round1 = (v) => Math.round(v * 10) / 10
@@ -25,9 +25,22 @@ function period(timeseries, i) {
   }
 }
 
+/**
+ * Hour (in station time) that the 6-hour periods are aligned to. MET's 6-hourly
+ * steps start at 00/06/12/18 UTC, which is 02/08/14/20 during Troll summer time.
+ */
+function periodOffset(timeseries) {
+  const i = timeseries.findIndex((e, j) => {
+    const next = timeseries[j + 1]
+    return next && new Date(next.time) - new Date(e.time) >= 6 * HOUR
+  })
+  return i === -1 ? 0 : stationTime(timeseries[i].time).hour % 6
+}
+
 /** Groups the raw timeseries into one summary per day (station time). */
 export function summariseDays(timeseries, days = 7) {
   const byDate = new Map()
+  const offset = periodOffset(timeseries)
 
   timeseries.forEach((entry, i) => {
     const { date, hour } = stationTime(entry.time)
@@ -35,9 +48,19 @@ export function summariseDays(timeseries, days = 7) {
     const { precipitation, symbol } = period(timeseries, i)
 
     if (!byDate.has(date)) {
-      byDate.set(date, { date, min: temp, max: temp, precipitation: 0, maxWind: wind, symbol, symbolHour: hour })
+      byDate.set(date, { date, min: temp, max: temp, precipitation: 0, maxWind: wind, symbol, symbolHour: hour, periods: [] })
     }
     const day = byDate.get(date)
+
+    // 6-hour breakdown (like Yr's expanded day). A period starts at each aligned
+    // hour, and also at the first entry of a day, so "rest of today" and days that
+    // start mid-period are covered. Precipitation reuses period() above, so the
+    // periods always add up to the day total.
+    if (!day.periods.length || hour % 6 === offset) {
+      const block = entry.data.next_6_hours ?? entry.data.next_1_hours
+      day.periods.push({ time: entry.time, symbol: block?.summary?.symbol_code ?? null, precipitation: 0, temp, wind })
+    }
+    day.periods.at(-1).precipitation += precipitation
     day.min = Math.min(day.min, temp)
     day.max = Math.max(day.max, temp)
     day.maxWind = Math.max(day.maxWind, wind)
@@ -56,6 +79,7 @@ export function summariseDays(timeseries, days = 7) {
     max: round1(day.max),
     maxWind: round1(day.maxWind),
     precipitation: round1(day.precipitation),
+    periods: day.periods.map((p) => ({ ...p, precipitation: round1(p.precipitation) })),
   }))
 }
 

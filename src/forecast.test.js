@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { summariseDays } from './forecast'
+import { stationTime } from './format'
 
 // November: Troll station time is UTC+0, so UTC hours equal station hours.
 const entry = (time, temp, wind, { one, six } = {}) => ({
@@ -48,5 +49,31 @@ describe('summariseDays', () => {
 
   it('limits the number of days', () => {
     expect(summariseDays(timeseries, 1)).toHaveLength(1)
+  })
+
+  it('splits each day into 6-hour periods that add up to the day total', () => {
+    const [day1, day2] = summariseDays(timeseries)
+    // Day 1 starts mid-period at 10:00, then 6-hour periods from 12:00 and 18:00.
+    expect(day1.periods.map((p) => [p.time.slice(11, 16), p.precipitation, p.symbol])).toEqual([
+      ['10:00', 1, 'cloudy'],
+      ['12:00', 2, 'snow'],
+      ['18:00', 1, 'cloudy'],
+    ])
+    expect(day2.periods).toHaveLength(1)
+    for (const day of [day1, day2]) {
+      const sum = day.periods.reduce((s, p) => s + p.precipitation, 0)
+      expect(sum).toBeCloseTo(day.precipitation, 5)
+    }
+  })
+
+  it('aligns periods to 02/08/14/20 during Troll summer time (UTC+2, late March–October)', () => {
+    const summer = [
+      entry('2026-07-10T00:00:00Z', -25, 1, { one: ['fair_day', 0], six: ['fair_day', 0] }), // 02:00 local
+      entry('2026-07-10T04:00:00Z', -25, 1, { one: ['fair_day', 0], six: ['fair_day', 0] }), // 06:00 local – not a boundary in summer
+      entry('2026-07-10T06:00:00Z', -24, 1, { six: ['cloudy', 0] }), // 08:00 local, 6-hourly from here
+      entry('2026-07-10T12:00:00Z', -23, 1, { six: ['cloudy', 0] }), // 14:00 local
+    ]
+    const [day] = summariseDays(summer)
+    expect(day.periods.map((p) => stationTime(p.time).hour)).toEqual([2, 8, 14])
   })
 })
