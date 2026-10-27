@@ -1,18 +1,21 @@
+import { lazy, Suspense } from "react";
 import CurrentConditions from "./components/CurrentConditions";
-import WeatherChart from "./components/WeatherChart";
+import WhenVisible from "./components/WhenVisible";
 import Forecast from "./components/Forecast";
 import { useCachedData } from "./useCachedData";
 import { fetchWeather } from "./api";
 import { fetchForecast } from "./forecast";
+import { SOURCES } from "./sources";
 import { useNow } from "./useNow";
 import { formatDateTime, formatRelative } from "./format";
 import './index.css';
 
+// The chart library (Recharts) is most of the JavaScript, and the chart is below the
+// fold – load it separately, and only when the visitor scrolls near it.
+const WeatherChart = lazy(() => import("./components/WeatherChart"));
+const chartPlaceholder = <div className="chart-placeholder" aria-hidden="true" />;
+
 const STALE_AFTER = 30 * 60 * 1000
-// The station reports every minute; refreshing every 5 minutes is plenty.
-const WEATHER_MAX_AGE = 5 * 60 * 1000
-// MET updates the forecast about once an hour.
-const FORECAST_MAX_AGE = 30 * 60 * 1000
 
 function Shell({ children }) {
   return (
@@ -45,8 +48,8 @@ function Shell({ children }) {
 }
 
 function App() {
-  const { data, loading, error } = useCachedData('troll-weather:v2', fetchWeather, WEATHER_MAX_AGE)
-  const forecast = useCachedData('troll-weather:forecast:v1', fetchForecast, FORECAST_MAX_AGE)
+  const { data, loading, error } = useCachedData(SOURCES.weather.key, fetchWeather, SOURCES.weather.maxAge)
+  const forecast = useCachedData(SOURCES.forecast.key, fetchForecast, SOURCES.forecast.maxAge)
   const now = useNow()
 
   if (loading) return <Shell><p className="status" aria-live="polite">Loading weather data…</p></Shell>
@@ -67,7 +70,11 @@ function App() {
       {error && <p className="notice" role="status">Could not refresh data ({error}). Showing the last saved readings.</p>}
       <CurrentConditions latest={data.latest} series={data.series} range24h={data.range24h} />
       <Forecast forecast={forecast.data} error={forecast.error} />
-      <WeatherChart series={data.series} />
+      <WhenVisible placeholder={chartPlaceholder}>
+        <Suspense fallback={chartPlaceholder}>
+          <WeatherChart series={data.series} />
+        </Suspense>
+      </WhenVisible>
     </Shell>
   )
 }

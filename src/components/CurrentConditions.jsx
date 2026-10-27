@@ -79,7 +79,7 @@ function CurrentConditions({ latest, series, range24h }) {
       </div>
 
       <dl className="stats">
-        <Stat label="Wind" value={latest.FF0_0} unit="m/s" spokenUnit="metres per second">
+        <Stat label="Wind" value={latest.FF0_0?.toFixed(1)} unit="m/s" spokenUnit="metres per second">
           {direction && (
             <>
               <svg
@@ -91,7 +91,7 @@ function CurrentConditions({ latest, series, range24h }) {
                 <path d="M8 1 L13 13 L8 10 L3 13 Z" transform={`rotate(${latest.DD0_0 + 180} 8 8)`} />
               </svg>
               from {direction}
-              {latest.FG0_0 != null && <>, gusts {formatNumber(latest.FG0_0)} m/s</>}
+              {latest.FG0_0 != null && <>, gusts {formatNumber(latest.FG0_0.toFixed(1))} m/s</>}
             </>
           )}
         </Stat>

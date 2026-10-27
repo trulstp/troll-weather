@@ -57,6 +57,11 @@ main,
   padding: 2rem 1rem;
 }
 
+/* Keeps the footer below the fold while data loads, so it doesn't jump (layout shift). */
+main {
+  min-height: 100vh;
+}
+
 .page-header {
   margin-bottom: 0.5rem;
 }
@@ -143,4 +148,21 @@ h1 {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* Reserves the chart card's space while its code loads, so nothing jumps. */
+.chart-placeholder {
+  height: 410px;
+}
+
+@media (max-width: 480px) {
+  .chart-placeholder {
+    height: 443px;
+  }
+}
+
+.chart-placeholder {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }

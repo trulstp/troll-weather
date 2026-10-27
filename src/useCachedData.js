@@ -18,7 +18,7 @@ export function writeCache(key, data) {
 
 /**
  * Stale-while-revalidate: show cached data instantly, then refresh it in the
- * background when it is older than `maxAge`. Keeps polling while the page is open.
+ * background when it is older than `maxAge`. Keeps polling while the tab is visible.
  * `fetcher` must be a stable function (e.g. defined at module level).
  */
 export function useCachedData(key, fetcher, maxAge) {
@@ -41,14 +41,26 @@ export function useCachedData(key, fetcher, maxAge) {
       }
     }
 
-    const age = cached ? Date.now() - cached.savedAt : Infinity
-    const firstRefresh = setTimeout(refresh, Math.max(0, maxAge - age))
-    const interval = setInterval(refresh, maxAge)
+    // Only poll while the tab is visible – a background tab shouldn't keep
+    // downloading data nobody is looking at. Catch up when it becomes visible.
+    let lastFetch = cached ? cached.savedAt : 0
+    let timer
+    const schedule = () => {
+      clearTimeout(timer)
+      if (document.hidden) return
+      timer = setTimeout(async () => {
+        lastFetch = Date.now()
+        await refresh()
+        if (!cancelled) schedule()
+      }, Math.max(0, maxAge - (Date.now() - lastFetch)))
+    }
+    schedule()
+    document.addEventListener('visibilitychange', schedule)
 
     return () => {
       cancelled = true
-      clearTimeout(firstRefresh)
-      clearInterval(interval)
+      clearTimeout(timer)
+      document.removeEventListener('visibilitychange', schedule)
     }
   }, [cached, key, fetcher, maxAge])
 

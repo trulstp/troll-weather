@@ -43,12 +43,12 @@ export function parseResponse(result) {
   }
 }
 
+// Sent as a GET with the query in the URL: a "simple" CORS request, so the browser
+// skips the extra OPTIONS preflight round trip that a JSON POST would need.
+export const WEATHER_URL = `${API_URL}?source_content_type=application/json&source=${encodeURIComponent(JSON.stringify(QUERY))}`
+
 export async function fetchWeather() {
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(QUERY),
-  })
+  const response = await fetch(WEATHER_URL)
   if (!response.ok) throw new Error(`Error: ${response.status}`)
   return parseResponse(await response.json())
 }

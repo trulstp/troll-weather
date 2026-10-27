@@ -17,9 +17,10 @@ the 7-day forecast from MET Norway (the same forecast as Yr).
 
 - **Current conditions** — temperature with 24-hour low/high and trend, wind chill
   ("feels like") when it applies, wind speed with direction and gusts, humidity and air pressure
-- **7-day forecast** — weather symbol, low/high, precipitation and max wind per day
+- **7-day forecast** — weather symbol, low/high, precipitation and max wind per day;
+  expand a day to see it in 6-hour periods, like Yr
 - **4-day chart** of hourly averages, switchable between temperature, wind and pressure
-- **Live** — refreshes every 5 minutes, shows "Updated 3 minutes ago" and flags stale data
+- **Live** — refreshes every 5 minutes while the tab is visible, shows "Updated 3 minutes ago" and flags stale data
 - **Light and dark mode** following the system setting
 - **Responsive** layout from phone to desktop
 
@@ -47,6 +48,8 @@ The station measurements and the MET Norway forecast are fetched independently w
 caching hook, so a forecast outage never hides the live readings (or the other way round).
 MET Norway's terms require clients to respect the `Expires` header; the forecast is a plain
 `GET`, so the browser's HTTP cache enforces that on top of the 30-minute app-level cache.
+The expanded 6-hour periods reuse the same de-duplicated precipitation, so they always add up
+to the day total.
 
 ### Forecast aggregation in station time
 
@@ -62,17 +65,57 @@ and chooses the midday symbol for each day, like Yr. All of this is unit tested.
 - Units spelled out for screen readers ("−20.4 degrees Celsius", not "°C")
 - Missing sensor readings shown as "–" and announced as "Not available"
 - Forecast is a real data table with row and column headers; icons have text alternatives
+- Expandable days use a `button` with `aria-expanded`/`aria-controls`; the whole row is clickable
 - Chart has a text alternative with its range; metric switcher uses `aria-pressed`
-- Visible focus styles, no motion, colour contrast checked in both themes
+- Visible focus styles, minimal motion (respects `prefers-reduced-motion`), colour contrast
+  checked in both themes
 
-### Lighthouse (production build)
+### Page load and sustainability review
 
-| Performance | Accessibility | Best Practices | SEO |
-|:---:|:---:|:---:|:---:|
-| 91–95 | 100 | 100 | 100 |
+Measured on the production build (Lighthouse 12, simulated mobile 4G, median of 3 runs;
+transfer sizes from Chrome DevTools Protocol; CO₂e from
+[co2.js](https://developers.thegreenwebfoundation.org/co2js/overview/) using the Sustainable
+Web Design model v4).
 
-Total page weight is ~190 KB. Measured with Lighthouse 12 in headless Chrome against
-`npm run build && npm run preview`.
+| | Before | After |
+|---|---:|---:|
+| Lighthouse Performance | 90 | **99** |
+| First Contentful Paint | 1.7 s | **1.2 s** |
+| Largest Contentful Paint ¹ | 1.9 s | **1.9 s** |
+| Time to Interactive | 2.3 s | **1.9 s** |
+| Total Blocking Time | 59 ms | **0 ms** |
+| JavaScript start-up | 372 ms | **97 ms** |
+| Cumulative Layout Shift (phone) | 0.18 | **0** |
+| First visit on a phone | 188 KB · 28.6 mg CO₂e | **94 KB · 14.3 mg CO₂e** |
+| Repeat visit (fresh cache) | 0.8 KB | 0.8 KB |
+| Tab left open in background, 8 h | 1.9 MB · 283 mg CO₂e | **0 KB** |
+
+¹ *Before*, the LCP element was the footer text shown while data loaded, so 1.9 s measured the
+loading screen. *After*, it is the temperature itself – the same time, but now for real content.
+
+What changed and why:
+
+- **Chart code is split out and loaded on demand.** Recharts was 84 % of the JavaScript, yet
+  the chart sits below the fold. It now loads as a separate chunk only when the visitor
+  scrolls near it (`React.lazy` + `IntersectionObserver`), halving the first-visit download
+  on phones (initial JS 163 → 66 KB gzip).
+- **Data starts downloading with the HTML, not after the JavaScript.** A tiny inline script
+  adds `<link rel="preload">` for both APIs — but only when the cached copy is stale, so
+  repeat visits download nothing extra. See [`vite.config.js`](vite.config.js).
+- **No CORS preflight.** The OpenSearch query is sent as a `GET` with the query in the URL
+  instead of a JSON `POST`, which saves the extra `OPTIONS` round trip.
+- **No polling in background tabs.** Refreshes pause when the tab is hidden
+  (Page Visibility API) and catch up when it becomes visible again.
+- **No layout shift.** The footer used to jump off-screen when content arrived, and the chart
+  now has a placeholder with its exact height.
+- **Already efficient:** system fonts (no web-font downloads), SVG icons loaded only when shown,
+  server-side aggregation (~400× smaller data), dark mode for OLED screens, minimal animation.
+
+Hosting: GitHub Pages (Fastly) is verified green by the
+[Green Web Foundation](https://www.thegreenwebfoundation.org/). The two data APIs are not in
+its directory, so their energy source is unverified. GitHub Pages also caches hashed assets
+for only 10 minutes; a host that allows `Cache-Control: immutable` (e.g. Netlify or Cloudflare
+Pages) would avoid revalidation requests on later visits.
 
 ## Getting started
 
@@ -104,15 +147,17 @@ to GitHub Pages.
 src/
 ├── api.js                 OpenSearch query and response parsing (measurements)
 ├── forecast.js            MET Norway forecast fetch and per-day aggregation
-├── useCachedData.js       Data hook with localStorage cache and auto-refresh
+├── sources.js             API URLs, cache keys and max ages (also used by vite.config.js)
+├── useCachedData.js       Data hook with localStorage cache and visibility-aware refresh
 ├── symbols.js             Weather symbol descriptions (from metno/weathericons)
 ├── weather.js             Wind chill, compass direction, temperature trend
 ├── format.js              Station time zone, dates, relative time, numbers
 ├── useNow.js              Ticking clock for "updated X minutes ago"
 ├── components/
 │   ├── CurrentConditions  Hero temperature and secondary measurements
-│   ├── Forecast           7-day forecast table
-│   └── WeatherChart       4-day chart with metric switcher
+│   ├── Forecast           7-day forecast table with expandable 6-hour periods
+│   ├── WhenVisible        Renders children only when scrolled near (lazy chart)
+│   └── WeatherChart       4-day chart with metric switcher (separate chunk)
 └── *.test.js              Unit tests
 ```
 
