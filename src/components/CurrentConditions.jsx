@@ -59,7 +59,7 @@ function CurrentConditions({ latest, series, range24h }) {
           ) : (
             <>
               <span className="visually-hidden">Temperature </span>
-              {formatNumber(temp)}
+              {formatNumber(temp.toFixed(1))}
               <span className="hero-unit" aria-hidden="true">°C</span>
               <span className="visually-hidden"> degrees Celsius</span>
             </>

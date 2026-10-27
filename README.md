@@ -1,7 +1,8 @@
 # Troll Weather Station
 
 Live weather dashboard for the Norwegian **Troll research station** in Dronning Maud Land,
-Antarctica, built with React and data from the Norwegian Polar Institute.
+Antarctica, built with React. Live measurements come from the Norwegian Polar Institute and
+the 7-day forecast from MET Norway (the same forecast as Yr).
 
 **[Live demo →](https://trulstp.github.io/troll-weather/)**
 
@@ -16,6 +17,7 @@ Antarctica, built with React and data from the Norwegian Polar Institute.
 
 - **Current conditions** — temperature with 24-hour low/high and trend, wind chill
   ("feels like") when it applies, wind speed with direction and gusts, humidity and air pressure
+- **7-day forecast** — weather symbol, low/high, precipitation and max wind per day
 - **4-day chart** of hourly averages, switchable between temperature, wind and pressure
 - **Live** — refreshes every 5 minutes, shows "Updated 3 minutes ago" and flags stale data
 - **Light and dark mode** following the system setting
@@ -37,13 +39,29 @@ Responses are cached in `localStorage`. Repeat visits render instantly from the 
 refresh in the background once the data is more than 5 minutes old. If a refresh fails, the
 last readings stay on screen with a notice instead of an error page. Storage errors (private
 mode, full quota, corrupted entries) are handled and covered by tests.
-See [`src/useWeatherData.js`](src/useWeatherData.js).
+See [`src/useCachedData.js`](src/useCachedData.js).
+
+### Two data sources, each cached by its own rules
+
+The station measurements and the MET Norway forecast are fetched independently with the same
+caching hook, so a forecast outage never hides the live readings (or the other way round).
+MET Norway's terms require clients to respect the `Expires` header; the forecast is a plain
+`GET`, so the browser's HTTP cache enforces that on top of the 30-minute app-level cache.
+
+### Forecast aggregation in station time
+
+MET's forecast is hourly for the first ~2.5 days and 6-hourly after that, with overlapping
+1-hour and 6-hour precipitation blocks. [`src/forecast.js`](src/forecast.js) picks the right
+block from the step to the next entry (so nothing is counted twice), groups by calendar day
+in the station's own time zone (`Antarctica/Troll`, which switches between UTC+0 and UTC+2),
+and chooses the midday symbol for each day, like Yr. All of this is unit tested.
 
 ### Accessibility
 
 - Semantic structure: landmarks, a logical heading outline, `dl`/`dt`/`dd` for measurements
 - Units spelled out for screen readers ("−20.4 degrees Celsius", not "°C")
 - Missing sensor readings shown as "–" and announced as "Not available"
+- Forecast is a real data table with row and column headers; icons have text alternatives
 - Chart has a text alternative with its range; metric switcher uses `aria-pressed`
 - Visible focus styles, no motion, colour contrast checked in both themes
 
@@ -51,9 +69,9 @@ See [`src/useWeatherData.js`](src/useWeatherData.js).
 
 | Performance | Accessibility | Best Practices | SEO |
 |:---:|:---:|:---:|:---:|
-| 92–95 | 100 | 100 | 100 |
+| 91–95 | 100 | 100 | 100 |
 
-Total page weight is ~180 KB. Measured with Lighthouse 12 in headless Chrome against
+Total page weight is ~190 KB. Measured with Lighthouse 12 in headless Chrome against
 `npm run build && npm run preview`.
 
 ## Getting started
@@ -84,13 +102,16 @@ to GitHub Pages.
 
 ```
 src/
-├── api.js                 OpenSearch query and response parsing
-├── useWeatherData.js      Data hook with localStorage cache and auto-refresh
+├── api.js                 OpenSearch query and response parsing (measurements)
+├── forecast.js            MET Norway forecast fetch and per-day aggregation
+├── useCachedData.js       Data hook with localStorage cache and auto-refresh
+├── symbols.js             Weather symbol descriptions (from metno/weathericons)
 ├── weather.js             Wind chill, compass direction, temperature trend
-├── format.js              Date, relative time and number formatting
+├── format.js              Station time zone, dates, relative time, numbers
 ├── useNow.js              Ticking clock for "updated X minutes ago"
 ├── components/
 │   ├── CurrentConditions  Hero temperature and secondary measurements
+│   ├── Forecast           7-day forecast table
 │   └── WeatherChart       4-day chart with metric switcher
 └── *.test.js              Unit tests
 ```
@@ -104,8 +125,13 @@ declarative API and good documentation.
 
 ## Notes
 
+- The station has no precipitation gauge — precipitation comes from the forecast only.
+  In this polar desert it is usually 0 mm, falling as light snow when it does occur.
+- Times and dates are shown in station time (`Antarctica/Troll`).
 - The chart shows hourly averages; the cards show the latest per-minute reading.
 - Wind chill uses the North American / UK formula and is only shown for wind above 4.8 km/h.
 - The low air pressure (~840 hPa) is expected: Troll lies about 1,270 m above sea level.
 
-Data: [Norwegian Polar Institute](https://www.npolar.no/en/) open weather API.
+Data: [Norwegian Polar Institute](https://www.npolar.no/en/) open weather API ·
+forecast from [MET Norway](https://api.met.no/) (CC BY 4.0) ·
+weather icons from [metno/weathericons](https://github.com/metno/weathericons) (MIT).

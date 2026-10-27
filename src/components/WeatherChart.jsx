@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { formatDay, formatDateTime, formatNumber } from '../format'
+import { formatDay, formatDateTime, formatNumber, stationTime } from '../format'
 import './WeatherChart.css'
 
 const METRICS = {
@@ -13,9 +13,9 @@ function WeatherChart({ series }) {
     const [metric, setMetric] = useState('temp')
     const { label, unit, spokenUnit } = METRICS[metric]
 
-    // One x-axis tick per day, placed at local midnight.
+    // One x-axis tick per day, placed at midnight station time.
     const midnights = series
-        .filter(item => new Date(item.time).getHours() === 0)
+        .filter(item => stationTime(item.time).hour === 0)
         .map(item => item.time)
 
     const values = series.map(item => item[metric]).filter(v => v != null)

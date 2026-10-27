@@ -1,0 +1,97 @@
+.forecast-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.forecast-card h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.forecast-header {
+  margin-bottom: 0.75rem;
+}
+
+.forecast-subtitle,
+.forecast-status {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.forecast-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.forecast-table th,
+.forecast-table td {
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.forecast-table tbody tr:last-child th,
+.forecast-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.forecast-table thead th {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.forecast-table tbody th {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.forecast-icon {
+  display: block;
+}
+
+.temp-low {
+  color: var(--cold);
+}
+
+.temp-high {
+  font-weight: 600;
+}
+
+.precip {
+  color: var(--muted);
+}
+
+.precip-some {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* On narrow screens, drop the column headers and wind to keep rows readable. */
+@media (max-width: 520px) {
+  .forecast-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .forecast-table th,
+  .forecast-table td {
+    padding-inline: 0.3rem;
+    font-size: 0.875rem;
+  }
+
+  .forecast-table td:last-child,
+  .forecast-table thead th:last-child {
+    display: none;
+  }
+}

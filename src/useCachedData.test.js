@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { readCache, writeCache } from './useWeatherData'
+import { readCache, writeCache } from './useCachedData'
 
 function fakeStorage() {
   const store = new Map()
@@ -19,9 +19,9 @@ describe('weather cache', () => {
     vi.stubGlobal('localStorage', fakeStorage())
     vi.useFakeTimers({ now: new Date('2026-10-19T12:00:00Z') })
 
-    writeCache({ latest: { TA1_0: -20 } })
+    writeCache('test', { latest: { TA1_0: -20 } })
 
-    expect(readCache()).toEqual({
+    expect(readCache('test')).toEqual({
       savedAt: new Date('2026-10-19T12:00:00Z').getTime(),
       data: { latest: { TA1_0: -20 } },
     })
@@ -29,7 +29,7 @@ describe('weather cache', () => {
 
   it('returns null when nothing is cached', () => {
     vi.stubGlobal('localStorage', fakeStorage())
-    expect(readCache()).toBeNull()
+    expect(readCache('test')).toBeNull()
   })
 
   it('never throws when storage is unavailable', () => {
@@ -37,14 +37,14 @@ describe('weather cache', () => {
       getItem: () => { throw new Error('SecurityError') },
       setItem: () => { throw new Error('QuotaExceededError') },
     })
-    expect(readCache()).toBeNull()
-    expect(() => writeCache({})).not.toThrow()
+    expect(readCache('test')).toBeNull()
+    expect(() => writeCache('test', {})).not.toThrow()
   })
 
   it('ignores corrupted cache entries', () => {
     const storage = fakeStorage()
-    storage.setItem('troll-weather:v2', '{not json')
+    storage.setItem('test', '{not json')
     vi.stubGlobal('localStorage', storage)
-    expect(readCache()).toBeNull()
+    expect(readCache('test')).toBeNull()
   })
 })
