@@ -33,10 +33,14 @@ function Shell({ children }) {
         {children}
       </main>
       <footer className="page-footer">
+        {/* CC BY 4.0 requires credit, a link to the licence and a note that the data was changed. */}
         <p>
-          Data from the <a href="https://www.npolar.no/en/">Norwegian Polar Institute</a> (Norsk
-          Polarinstitutt). Forecast from <a href="https://api.met.no/">MET Norway</a> (CC BY 4.0),
-          weather icons by <a href="https://github.com/metno/weathericons">Yr</a> (MIT).
+          Measurements: <a href="https://doi.org/10.21334/npolar.2017.79d4b7c7">Norwegian Polar
+          Institute</a> (Norsk Polarinstitutt). Forecast: based on data from{' '}
+          <a href="https://api.met.no/">MET Norway</a>. Both licensed under{' '}
+          <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>; shown here as
+          hourly averages and daily summaries. Weather icons ©{' '}
+          <a href="https://github.com/metno/weathericons">Yr</a> (MIT).
         </p>
         <p>Troll research station · 72.0° S, 2.5° E · ~1,270 m above sea level.</p>
         <p>

@@ -177,6 +177,32 @@ declarative API and good documentation.
 - Wind chill uses the North American / UK formula and is only shown for wind above 4.8 km/h.
 - The low air pressure (~840 hPa) is expected: Troll lies about 1,270 m above sea level.
 
-Data: [Norwegian Polar Institute](https://www.npolar.no/en/) open weather API ·
-forecast from [MET Norway](https://api.met.no/) (CC BY 4.0) ·
-weather icons from [metno/weathericons](https://github.com/metno/weathericons) (MIT).
+## Data, licences and terms
+
+| Source | Licence | How this app complies |
+|---|---|---|
+| [Troll meteorological data](https://doi.org/10.21334/npolar.2017.79d4b7c7), Norwegian Polar Institute | CC BY 4.0 | Credited with DOI link, licence link and a note that values are aggregated |
+| [Locationforecast](https://api.met.no/weatherapi/locationforecast/2.0/documentation), MET Norway | CC BY 4.0 / NLOD 2.0 + [terms of service](https://api.met.no/doc/TermsOfService) | See below |
+| [Weather icons](https://github.com/metno/weathericons), © Yr | MIT | Licence file shipped with the icons (`public/weather-icons/LICENSE.txt`) |
+
+MET Norway's terms of service, point by point:
+
+- **Credit:** "based on data from MET Norway" with a link to the licence, and changes noted.
+- **Identification:** browsers can't set `User-Agent`, so – as the terms allow for websites –
+  the app is identified by the `Origin` header of its simple cross-origin `GET` requests
+  (no custom headers, so no CORS preflight, which MET does not support).
+- **Caching:** responses are kept for 30 minutes and the browser's HTTP cache honours
+  `Expires` and revalidates with `If-Modified-Since`; no polling while the tab is hidden.
+- **Traffic:** one request per visitor per 30 minutes, far below the 20 requests/second limit.
+  MET asks high-traffic sites to put a caching proxy in front of the API; that would be the
+  next step if this site ever got real traffic.
+- **Coordinates** use 2 decimals (max 4 allowed); HTTPS and gzip are used; a `203`
+  (deprecated version) response is logged.
+- **Branding:** the site isn't presented as Yr or MET Norway. Saying that MET's Locationforecast
+  is the same data Yr uses is a factual statement, not an endorsement.
+
+Privacy: the site sets no cookies and has no analytics. `localStorage` only holds cached
+weather data. Visitors' browsers contact GitHub Pages, the Polar Institute and MET Norway
+directly, so those services see the visitor's IP address – a proxy would hide it.
+
+*This is a summary of the published terms as of October 2026, not legal advice.*

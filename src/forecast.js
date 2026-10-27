@@ -86,6 +86,8 @@ export function summariseDays(timeseries, days = 7) {
 export async function fetchForecast() {
   const response = await fetch(FORECAST_URL)
   if (!response.ok) throw new Error(`Forecast error: ${response.status}`)
+  // MET's terms: 203 means this API version is deprecated – log it so it gets noticed.
+  if (response.status === 203) console.warn('MET Norway: Locationforecast 2.0 is deprecated, see https://api.met.no/')
   const result = await response.json()
   return {
     updatedAt: result.properties.meta.updated_at,
