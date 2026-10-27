@@ -18,104 +18,30 @@ the 7-day forecast from MET Norway (the same forecast as Yr).
 - **Current conditions** — temperature with 24-hour low/high and trend, wind chill
   ("feels like") when it applies, wind speed with direction and gusts, humidity and air pressure
 - **7-day forecast** — weather symbol, low/high, precipitation and max wind per day;
-  expand a day to see it in 6-hour periods, like Yr
+  expand a day to see it in 6-hour periods
 - **4-day chart** of hourly averages, switchable between temperature, wind and pressure
 - **Live** — refreshes every 5 minutes while the tab is visible, shows "Updated 3 minutes ago" and flags stale data
 - **Light and dark mode** following the system setting
 - **Responsive** layout from phone to desktop
+- **Accessible** — semantic markup, a real data table for the forecast, units spelled out for
+  screen readers, keyboard-operable controls and checked colour contrast
 
-## Engineering highlights
+## How it works
 
-### ~400× smaller data payload
-
-The first version downloaded every per-minute reading for the last four days
-(~7000 documents, **~4.7 MB, ~2.2 s**) and then threw most of them away to draw the chart.
-It now lets OpenSearch do the work: one query returns the latest reading, hourly averages
-(`date_histogram`) and the 24-hour min/max (`filter` aggregation) — **~15 KB in ~0.2 s**.
-See [`src/api.js`](src/api.js).
-
-### Stale-while-revalidate caching
-
-Responses are cached in `localStorage`. Repeat visits render instantly from the cache and
-refresh in the background once the data is more than 5 minutes old. If a refresh fails, the
-last readings stay on screen with a notice instead of an error page. Storage errors (private
-mode, full quota, corrupted entries) are handled and covered by tests.
-See [`src/useCachedData.js`](src/useCachedData.js).
-
-### Two data sources, each cached by its own rules
-
-The station measurements and the MET Norway forecast are fetched independently with the same
-caching hook, so a forecast outage never hides the live readings (or the other way round).
-MET Norway's terms require clients to respect the `Expires` header; the forecast is a plain
-`GET`, so the browser's HTTP cache enforces that on top of the 30-minute app-level cache.
-The expanded 6-hour periods reuse the same de-duplicated precipitation, so they always add up
-to the day total.
-
-### Forecast aggregation in station time
-
-MET's forecast is hourly for the first ~2.5 days and 6-hourly after that, with overlapping
-1-hour and 6-hour precipitation blocks. [`src/forecast.js`](src/forecast.js) picks the right
-block from the step to the next entry (so nothing is counted twice), groups by calendar day
-in the station's own time zone (`Antarctica/Troll`, which switches between UTC+0 and UTC+2),
-and chooses the midday symbol for each day, like Yr. All of this is unit tested.
-
-### Accessibility
-
-- Semantic structure: landmarks, a logical heading outline, `dl`/`dt`/`dd` for measurements
-- Units spelled out for screen readers ("−20.4 degrees Celsius", not "°C")
-- Missing sensor readings shown as "–" and announced as "Not available"
-- Forecast is a real data table with row and column headers; icons have text alternatives
-- Expandable days use a `button` with `aria-expanded`/`aria-controls`; the whole row is clickable
-- Chart has a text alternative with its range; metric switcher uses `aria-pressed`
-- Visible focus styles, minimal motion (respects `prefers-reduced-motion`), colour contrast
-  checked in both themes
-
-### Page load and sustainability review
-
-Measured on the production build (Lighthouse 12, simulated mobile 4G, median of 3 runs;
-transfer sizes from Chrome DevTools Protocol; CO₂e from
-[co2.js](https://developers.thegreenwebfoundation.org/co2js/overview/) using the Sustainable
-Web Design model v4).
-
-| | Before | After |
-|---|---:|---:|
-| Lighthouse Performance | 90 | **99** |
-| First Contentful Paint | 1.7 s | **1.2 s** |
-| Largest Contentful Paint ¹ | 1.9 s | **1.9 s** |
-| Time to Interactive | 2.3 s | **1.9 s** |
-| Total Blocking Time | 59 ms | **0 ms** |
-| JavaScript start-up | 372 ms | **97 ms** |
-| Cumulative Layout Shift (phone) | 0.18 | **0** |
-| First visit on a phone | 188 KB · 28.6 mg CO₂e | **94 KB · 14.3 mg CO₂e** |
-| Repeat visit (fresh cache) | 0.8 KB | 0.8 KB |
-| Tab left open in background, 8 h | 1.9 MB · 283 mg CO₂e | **0 KB** |
-
-¹ *Before*, the LCP element was the footer text shown while data loaded, so 1.9 s measured the
-loading screen. *After*, it is the temperature itself – the same time, but now for real content.
-
-What changed and why:
-
-- **Chart code is split out and loaded on demand.** Recharts was 84 % of the JavaScript, yet
-  the chart sits below the fold. It now loads as a separate chunk only when the visitor
-  scrolls near it (`React.lazy` + `IntersectionObserver`), halving the first-visit download
-  on phones (initial JS 163 → 66 KB gzip).
-- **Data starts downloading with the HTML, not after the JavaScript.** A tiny inline script
-  adds `<link rel="preload">` for both APIs — but only when the cached copy is stale, so
-  repeat visits download nothing extra. See [`vite.config.js`](vite.config.js).
-- **No CORS preflight.** The OpenSearch query is sent as a `GET` with the query in the URL
-  instead of a JSON `POST`, which saves the extra `OPTIONS` round trip.
-- **No polling in background tabs.** Refreshes pause when the tab is hidden
-  (Page Visibility API) and catch up when it becomes visible again.
-- **No layout shift.** The footer used to jump off-screen when content arrived, and the chart
-  now has a placeholder with its exact height.
-- **Already efficient:** system fonts (no web-font downloads), SVG icons loaded only when shown,
-  server-side aggregation (~400× smaller data), dark mode for OLED screens, minimal animation.
-
-Hosting: GitHub Pages (Fastly) is verified green by the
-[Green Web Foundation](https://www.thegreenwebfoundation.org/). The two data APIs are not in
-its directory, so their energy source is unverified. GitHub Pages also caches hashed assets
-for only 10 minutes; a host that allows `Cache-Control: immutable` (e.g. Netlify or Cloudflare
-Pages) would avoid revalidation requests on later visits.
+- **Measurements** are fetched with a single OpenSearch query that returns the latest reading,
+  hourly averages (`date_histogram`) and the 24-hour min/max (`filter` aggregation), so the
+  browser downloads about 15 KB instead of every per-minute reading. See [`src/api.js`](src/api.js).
+- **Forecast** data from MET Norway is hourly for the first ~2.5 days and 6-hourly after that.
+  [`src/forecast.js`](src/forecast.js) combines the overlapping precipitation blocks without
+  counting anything twice, groups the data by day in station time and picks a midday symbol
+  for each day.
+- **Caching** — both sources use [`src/useCachedData.js`](src/useCachedData.js), a
+  stale-while-revalidate hook backed by `localStorage`. Repeat visits render instantly from the
+  cache, refreshes happen in the background, and refreshing pauses while the tab is hidden.
+  If a refresh fails, the last data stays on screen with a notice.
+- **Page load** — the chart library is loaded only when the chart scrolls into view, and when
+  the cache is stale the data requests start alongside the HTML instead of waiting for the
+  JavaScript (see [`vite.config.js`](vite.config.js)).
 
 ## Getting started
 
@@ -157,7 +83,7 @@ src/
 │   ├── CurrentConditions  Hero temperature and secondary measurements
 │   ├── Forecast           7-day forecast table with expandable 6-hour periods
 │   ├── WhenVisible        Renders children only when scrolled near (lazy chart)
-│   └── WeatherChart       4-day chart with metric switcher (separate chunk)
+│   └── WeatherChart       4-day chart with metric switcher
 └── *.test.js              Unit tests
 ```
 
@@ -165,44 +91,21 @@ src/
 
 React 19 · Vite 8 · Recharts · Vitest · ESLint · GitHub Actions / Pages
 
-**Recharts** was chosen for the chart because it is built for React, has a
-declarative API and good documentation.
-
 ## Notes
 
-- The station has no precipitation gauge — precipitation comes from the forecast only.
+- The station has no precipitation gauge, so precipitation comes from the forecast only.
   In this polar desert it is usually 0 mm, falling as light snow when it does occur.
-- Times and dates are shown in station time (`Antarctica/Troll`).
+- Times and dates are shown in station time (`Antarctica/Troll`, UTC+0 or UTC+2).
 - The chart shows hourly averages; the cards show the latest per-minute reading.
 - Wind chill uses the North American / UK formula and is only shown for wind above 4.8 km/h.
 - The low air pressure (~840 hPa) is expected: Troll lies about 1,270 m above sea level.
 
-## Data, licences and terms
+## Data and licences
 
-| Source | Licence | How this app complies |
-|---|---|---|
-| [Troll meteorological data](https://doi.org/10.21334/npolar.2017.79d4b7c7), Norwegian Polar Institute | CC BY 4.0 | Credited with DOI link, licence link and a note that values are aggregated |
-| [Locationforecast](https://api.met.no/weatherapi/locationforecast/2.0/documentation), MET Norway | CC BY 4.0 / NLOD 2.0 + [terms of service](https://api.met.no/doc/TermsOfService) | See below |
-| [Weather icons](https://github.com/metno/weathericons), © Yr | MIT | Licence file shipped with the icons (`public/weather-icons/LICENSE.txt`) |
+| Source | Licence |
+|---|---|
+| [Troll meteorological data](https://doi.org/10.21334/npolar.2017.79d4b7c7), Norwegian Polar Institute | CC BY 4.0 |
+| [Locationforecast](https://api.met.no/weatherapi/locationforecast/2.0/documentation), MET Norway | CC BY 4.0 / NLOD 2.0 |
+| [Weather icons](https://github.com/metno/weathericons), © Yr | MIT |
 
-MET Norway's terms of service, point by point:
-
-- **Credit:** "based on data from MET Norway" with a link to the licence, and changes noted.
-- **Identification:** browsers can't set `User-Agent`, so – as the terms allow for websites –
-  the app is identified by the `Origin` header of its simple cross-origin `GET` requests
-  (no custom headers, so no CORS preflight, which MET does not support).
-- **Caching:** responses are kept for 30 minutes and the browser's HTTP cache honours
-  `Expires` and revalidates with `If-Modified-Since`; no polling while the tab is hidden.
-- **Traffic:** one request per visitor per 30 minutes, far below the 20 requests/second limit.
-  MET asks high-traffic sites to put a caching proxy in front of the API; that would be the
-  next step if this site ever got real traffic.
-- **Coordinates** use 2 decimals (max 4 allowed); HTTPS and gzip are used; a `203`
-  (deprecated version) response is logged.
-- **Branding:** the site isn't presented as Yr or MET Norway. Saying that MET's Locationforecast
-  is the same data Yr uses is a factual statement, not an endorsement.
-
-Privacy: the site sets no cookies and has no analytics. `localStorage` only holds cached
-weather data. Visitors' browsers contact GitHub Pages, the Polar Institute and MET Norway
-directly, so those services see the visitor's IP address – a proxy would hide it.
-
-*This is a summary of the published terms as of October 2026, not legal advice.*
+The site sets no cookies and has no analytics; `localStorage` only holds cached weather data.
